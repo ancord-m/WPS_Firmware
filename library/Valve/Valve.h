@@ -26,17 +26,16 @@ class Valve
 {
 	public:
 		Valve(int valveNumber, int openedSwitch, int closedSwitch);
-		void openValve();
-		void closeValve();
+		bool openValve();
+		bool closeValve();
 		int getState();
 		bool selfTest();
 	private:
 		int desiredState; //желаемое состояние из ValveState; если вырубят свет в работе, то надо помнить, куда ехал
 		int openedSwitch;  //номер ножки МК
 		int closedSwitch; //к которой подключен концевик
-		int valveNumber; //номер для обращения с платы MS L293D
-		AF_DCMotor *valveMotor;
-		void action(ValveState state); //передаю желаемое состояние
+		int valveNumber; //номер для обращения с платы MS L293D		
+		bool action(ValveState state); //передаю желаемое состояние
 };
 
 #endif

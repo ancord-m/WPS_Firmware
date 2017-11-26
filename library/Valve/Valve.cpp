@@ -14,50 +14,57 @@ Valve::Valve(int valveNumber, int openedSwitch, int closedSwitch)
 	
 	pinMode(openedSwitch, INPUT); digitalWrite(openedSwitch, HIGH);
 	pinMode(closedSwitch, INPUT); digitalWrite(closedSwitch, HIGH);
-	
-	AF_DCMotor vMotor(valveNumber);
-	valveMotor = &vMotor;	
 }
 
-void Valve::openValve()
+bool Valve::openValve()
 {		
-	action(OPENED);
+	return action(OPENED);
 }
 
-void Valve::closeValve()
+bool Valve::closeValve()
 {
-	action(CLOSED);		
+	return action(CLOSED);		
 }
 
-void Valve::action(ValveState state)
+bool Valve::action(ValveState state)
 {
 	int i = 0;
-	desiredState = state;
+	bool switchWasPressed = getState() != UNDEFINED ? true : false;
+	desiredState = state; //отправится в EEPROM, чтоб после сбоя питания доехать, куда надо
 	Serial.print("Inside action. Desired state: ");
 	desiredState ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");
-	if(getState() != state){			
-		valveMotor->setSpeed(MOTOR_SPEED);
-		valveMotor ? Serial.print("Speed was set\n") : Serial.print("Null pointer\n");
+	if(getState() != state){
+		AF_DCMotor valveMotor(valveNumber);
+		valveMotor.setSpeed(MOTOR_SPEED);
+		&valveMotor ? Serial.print("Speed was set\n") : Serial.print("Null pointer\n");
 		while(getState() != state){
 			if(state == OPENED) {
 				Serial.print("Opening valve. State: ");
 				Serial.print(getState());
 				Serial.print('\n');
-				valveMotor->run(OPEN);	
+				valveMotor.run(OPEN);	
 			} else {
 				Serial.print("Closing valve. State: ");
 				Serial.print(getState());
 				Serial.print('\n');
-				valveMotor->run(CLOSE);	
+				valveMotor.run(CLOSE);	
 			}
-			if(++i > CYCLES_TO_STOP) {
+			//число циклов * delay ниже, превосходит время на откр/закр крана
+			//и сюда войдем только, если концевик не сработал, либо упало напряжение (кран поедет медленее) 
+			if(++i > CYCLES_TO_STOP) { 
+				switchWasPressed = false; //если концевик не сработает, то об этом будет сообщено
 				break;
+			} else {
+				switchWasPressed = true;
 			}
 			delay(SHORT_DELAY);			
 		}
 		Serial.print("Stopping valve\n");
-		valveMotor->run(STOP);		
+		valveMotor.run(STOP);	
+		return switchWasPressed;	
 	}
+	
+	return switchWasPressed;
 }
 
 int Valve::getState()
@@ -67,7 +74,7 @@ int Valve::getState()
 	bool closed = false;
 	
 	//концевики крана подключены к портам 20 и 21, их надо через analogRead опрашивать
-	if(openedSwitch != 21 & closedSwitch != 20) { 
+	if(openedSwitch != 21 && closedSwitch != 20) { 
 		opened = digitalRead(openedSwitch);
 		closed = digitalRead(closedSwitch);
 	} else 	{
@@ -86,22 +93,19 @@ int Valve::getState()
 	{
 		return OPENED;
 	} 
-	else if(closed == false) 
-		
-	
+	else if(closed == false) 	
 	{
 		return CLOSED;
 	}	
 }
 
 bool Valve::selfTest(){
-	AF_DCMotor vMotor(valveNumber);
-	valveMotor = &vMotor;
-	valveMotor->setSpeed(200);
-	valveMotor ? Serial.print("Speed was set\n") : Serial.print("Null pointer\n");
-	valveMotor->run(OPEN);
-	delay(2000);
-	valveMotor->run(CLOSE);
-	delay(2000);
-	return false;
+	bool oswp = false; //opened switch was pressed
+	bool cswp = false; //closed ...
+	
+	oswp = openValve();
+	delay(500);
+	cswp = closeValve();
+	
+	return oswp && cswp;
 }
