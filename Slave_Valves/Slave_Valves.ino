@@ -11,13 +11,17 @@ void setup() {
   Serial.begin(9600);
  // Wire.begin(SLAVE_ADDR);
  // Wire.onReceive(valvesAction);
+ pinMode(13, OUTPUT);
 }
 
 void loop() {
   int result = valve.getState();
-  //valve.selfTest();
-/*
-  switch(result)
+  result = valve.selfTest();
+  result ? digitalWrite(13, HIGH) : digitalWrite(13, LOW);
+  delay(3000);
+  
+  
+/*  switch(result)
   {
     case 0: Serial.print("Opened\n"); break;
     case 1: Serial.print("Closed\n"); break;
