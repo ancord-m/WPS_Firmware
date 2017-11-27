@@ -31,16 +31,17 @@ class Valve
 		bool closeValve();
 		int getState();
 		bool selfTest();
-		int getValveNumber();
-		//желаемое состояние из ValveState; пишется в EEPROM, если вырубят свет, то надо помнить, куда ехал и доехать
-		int desiredState; 
+		int getValveNumber();	
+		void restoreState();		
 	private:
 		int openedSwitch;  //номер ножки МК
 		int closedSwitch; //к которой подключен концевик
 		bool action(ValveState state); //передаю желаемое состояние
-		void writeDesiredState();
+		void writeDesiredState();		
 		int readDesiredState();
 		int valveNumber; //номер для обращения с платы MS L293D		
+		//желаемое состояние из ValveState; пишется в EEPROM, если вырубят свет, то надо помнить, куда ехал и доехать
+		ValveState desiredState; 
 };
 
 #endif

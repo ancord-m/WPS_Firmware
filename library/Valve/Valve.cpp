@@ -13,30 +13,21 @@ Valve::Valve(int valveNumber, int openedSwitch, int closedSwitch)
 	this->closedSwitch = closedSwitch;
 	
 	pinMode(openedSwitch, INPUT); digitalWrite(openedSwitch, HIGH);
-	pinMode(closedSwitch, INPUT); digitalWrite(closedSwitch, HIGH);
-	
-	//восстановка состояния и если желаемое не достигнуто - достигнуть
-	//desiredState может быть либо 0 (OPENED), либо 1 (CLOSED); см enum ValveState
-	desiredState = readDesiredState();
-	if(desiredState != getState())
-	{
-		desiredState ? closeValve() : openValve();
-	}
-	
+	pinMode(closedSwitch, INPUT); digitalWrite(closedSwitch, HIGH);	
 }
 
 bool Valve::openValve()
 {		
 	desiredState = OPENED;
 	writeDesiredState();
-	return action(desiredState);
+	return action(OPENED);
 }
 
 bool Valve::closeValve()
 {
 	desiredState = CLOSED;
 	writeDesiredState();
-	return action(desiredState);		
+	return action(CLOSED);		
 }
 
 bool Valve::action(ValveState state)
@@ -47,18 +38,11 @@ bool Valve::action(ValveState state)
 	state ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");
 	if(getState() != state){
 		AF_DCMotor valveMotor(valveNumber);
-		valveMotor.setSpeed(MOTOR_SPEED);
-		&valveMotor ? Serial.print("Speed was set\n") : Serial.print("Null pointer\n");
+		valveMotor.setSpeed(MOTOR_SPEED);		
 		while(getState() != state){
-			if(state == OPENED) {
-				Serial.print("Opening valve. State: ");
-				Serial.print(getState());
-				Serial.print('\n');
+			if(state == OPENED) {			
 				valveMotor.run(OPEN);	
-			} else {
-				Serial.print("Closing valve. State: ");
-				Serial.print(getState());
-				Serial.print('\n');
+			} else {				
 				valveMotor.run(CLOSE);	
 			}
 			//число циклов * delay ниже, превосходит время на откр/закр крана
@@ -114,6 +98,7 @@ int Valve::getState()
 void Valve::writeDesiredState(){
 	int startAddr = 3 * (valveNumber - 1); //см протокол хранения состояния
 	EEPROM.write(startAddr, desiredState); //0 - OPENED, 1 - CLOSED
+	delay(10);
 }
 
 int Valve::readDesiredState(){
@@ -125,6 +110,16 @@ int Valve::getValveNumber(){
 	return valveNumber;
 }
 
+void Valve::restoreState(){
+	//восстановка состояния и если желаемое не достигнуто - достигнуть
+	//desiredState может быть либо 0 (OPENED), либо 1 (CLOSED); см enum ValveState
+	readDesiredState() ? desiredState = CLOSED : desiredState = OPENED;
+	desiredState ? Serial.print("Wanted to CLOSE\n") : Serial.print("Wanted to OPEN\n");
+	if(desiredState != getState()){
+		desiredState ? closeValve() : openValve();			
+	}
+}
+
 bool Valve::selfTest(){
 	bool oswp = false; //opened switch was pressed
 	bool cswp = false; //closed ...
@@ -132,6 +127,9 @@ bool Valve::selfTest(){
 	oswp = openValve();
 	delay(500);
 	cswp = closeValve();
+	
+	EEPROM.write(3*(valveNumber - 1) + 1, oswp);
+	EEPROM.write(3*(valveNumber - 1) + 2, cswp);
 	
 	return oswp && cswp;
 }

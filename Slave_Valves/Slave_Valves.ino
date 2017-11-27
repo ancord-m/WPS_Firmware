@@ -3,30 +3,28 @@
 #include <Wire.h>
 #include "Valve.h"
 
+#define SIGNAL_LED 13
+//инициализация кранов
 Valve v1_in(V1_IN, V1_IN_O, V1_IN_C); //IN кран первой бочки
 Valve v1_out(V1_OUT, V1_OUT_C, V1_OUT_C); //OUT кран первой бочки
 Valve v2_in(V2_IN, V2_IN_O, V2_IN_C); //IN кран второй бочки 
 Valve v2_out(V2_OUT, V2_OUT_O, V2_OUT_C); //OUT кран второй бочки
 
-byte switchesStates[4][2];
+byte swst[4][2]; //switches states
 
 void setup() {
 	Serial.begin(9600);
  // Wire.begin(SLAVE_ADDR);
  // Wire.onReceive(valvesAction);
- pinMode(13, OUTPUT);
-
-//TODO инициализация кранов
-//чтение из EEPROM состояния кранов: желаемое состояние и состояния концевиков
-//если какой-либо кран не достиг желаемого состояния, повторить нужное действие
+  
+  pinMode(SIGNAL_LED, OUTPUT);
+  readEeprom(); 
+  v2_in.restoreState();
 }
 
 void loop() {
-  int result = valve.getState();
-  result = valve.selfTest();
-  result ? digitalWrite(13, HIGH) : digitalWrite(13, LOW);
-  delay(3000);
-	
+  //v2_in.selfTest();
+  errorCheck();
 }
 
 
@@ -44,8 +42,10 @@ void valvesAction(){
 
   switch(action){
     case V1_IN_OPEN:
-		result = v1_in.openValve();
-		break;
+      result = v1_in.openValve();
+ //     swst[V1_IN - 1][OPENED] = result;
+ //     EEPROM.write(3 * (V1_IN - 1) + 1, result);
+		  break;
     case V1_IN_CLOSE:
 		result = v1_in.closeValve();
 		break;
@@ -69,3 +69,44 @@ void valvesAction(){
 		break; 
   }
 }
+
+void readEeprom(){
+  for(int i = 0; i < 4; i++){ //i - номер крана - 1
+    swst[i][OPENED] = EEPROM.read(3 * i + 1); //был нажат концевик OPENED?
+    swst[i][CLOSED] = EEPROM.read(3 * i + 2); //был нажат концевик CLOSED?
+  }
+}
+
+void signalLedBlink(){
+  delay(200);
+  digitalWrite(SIGNAL_LED, HIGH);
+  delay(200);
+  digitalWrite(SIGNAL_LED, LOW);
+}
+/* 
+ * Для каждого крана проверяем его состояние 
+ * Если что-то не так, диод на плате говорит: номер крана - неисправный концевик
+ * см документацию
+ */
+void errorCheck(){
+  for(int vCounter = 0; vCounter < 4; vCounter++){  
+    if(!swst[vCounter][OPENED] || !swst[vCounter][CLOSED]){
+      //сообщаем номер крана
+      for(int i = vCounter + 1; i != 0; i--){
+        signalLedBlink();      
+      }    
+      //сообщаем, какой концевик не сработал
+      if(!swst[vCounter][OPENED]) {
+        delay(700);
+        signalLedBlink();
+      }    
+      if(!swst[vCounter][CLOSED]) {
+        delay(700);
+        signalLedBlink();
+        signalLedBlink();
+      }
+    }
+    delay(3000);
+  }
+}
+
