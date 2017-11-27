@@ -14,25 +14,37 @@ Valve::Valve(int valveNumber, int openedSwitch, int closedSwitch)
 	
 	pinMode(openedSwitch, INPUT); digitalWrite(openedSwitch, HIGH);
 	pinMode(closedSwitch, INPUT); digitalWrite(closedSwitch, HIGH);
+	
+	//восстановка состояния и если желаемое не достигнуто - достигнуть
+	//desiredState может быть либо 0 (OPENED), либо 1 (CLOSED); см enum ValveState
+	desiredState = readDesiredState();
+	if(desiredState != getState())
+	{
+		desiredState ? closeValve() : openValve();
+	}
+	
 }
 
 bool Valve::openValve()
 {		
-	return action(OPENED);
+	desiredState = OPENED;
+	writeDesiredState();
+	return action(desiredState);
 }
 
 bool Valve::closeValve()
 {
-	return action(CLOSED);		
+	desiredState = CLOSED;
+	writeDesiredState();
+	return action(desiredState);		
 }
 
 bool Valve::action(ValveState state)
 {
-	int i = 0;
+	int cycles = 0;
 	bool switchWasPressed = getState() != UNDEFINED ? true : false;
-	desiredState = state; //отправится в EEPROM, чтоб после сбоя питания доехать, куда надо
 	Serial.print("Inside action. Desired state: ");
-	desiredState ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");
+	state ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");
 	if(getState() != state){
 		AF_DCMotor valveMotor(valveNumber);
 		valveMotor.setSpeed(MOTOR_SPEED);
@@ -51,7 +63,7 @@ bool Valve::action(ValveState state)
 			}
 			//число циклов * delay ниже, превосходит время на откр/закр крана
 			//и сюда войдем только, если концевик не сработал, либо упало напряжение (кран поедет медленее) 
-			if(++i > CYCLES_TO_STOP) { 
+			if(++cycles > CYCLES_TO_STOP) { 
 				switchWasPressed = false; //если концевик не сработает, то об этом будет сообщено
 				break;
 			} else {
@@ -97,6 +109,20 @@ int Valve::getState()
 	{
 		return CLOSED;
 	}	
+}
+
+void Valve::writeDesiredState(){
+	int startAddr = 3 * (valveNumber - 1); //см протокол хранения состояния
+	EEPROM.write(startAddr, desiredState); //0 - OPENED, 1 - CLOSED
+}
+
+int Valve::readDesiredState(){
+	int startAddr = 3 * (valveNumber - 1);
+	return EEPROM.read(startAddr);
+}
+
+int Valve::getValveNumber(){
+	return valveNumber;
 }
 
 bool Valve::selfTest(){

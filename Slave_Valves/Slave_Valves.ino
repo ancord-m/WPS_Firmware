@@ -3,15 +3,22 @@
 #include <Wire.h>
 #include "Valve.h"
 
-Valve valve(V2_IN, V2_IN_O, V2_IN_C);
-AF_DCMotor m(3);
+Valve v1_in(V1_IN, V1_IN_O, V1_IN_C); //IN кран первой бочки
+Valve v1_out(V1_OUT, V1_OUT_C, V1_OUT_C); //OUT кран первой бочки
+Valve v2_in(V2_IN, V2_IN_O, V2_IN_C); //IN кран второй бочки 
+Valve v2_out(V2_OUT, V2_OUT_O, V2_OUT_C); //OUT кран второй бочки
 
+byte switchesStates[4][2];
 
 void setup() {
-  Serial.begin(9600);
+	Serial.begin(9600);
  // Wire.begin(SLAVE_ADDR);
  // Wire.onReceive(valvesAction);
  pinMode(13, OUTPUT);
+
+//TODO инициализация кранов
+//чтение из EEPROM состояния кранов: желаемое состояние и состояния концевиков
+//если какой-либо кран не достиг желаемого состояния, повторить нужное действие
 }
 
 void loop() {
@@ -19,26 +26,7 @@ void loop() {
   result = valve.selfTest();
   result ? digitalWrite(13, HIGH) : digitalWrite(13, LOW);
   delay(3000);
-  
-  
-/*  switch(result)
-  {
-    case 0: Serial.print("Opened\n"); break;
-    case 1: Serial.print("Closed\n"); break;
-    case 2: Serial.print("Undefined\n"); break;
-  }
-
-  Serial.print('\n');
-  valve.openValve();
-  delay(2000);
-  valve.closeValve();
-  delay(2000);*/
-/*  m.setSpeed(200);
-  m.run(BACKWARD);
-  delay(1000);
-  m.run(FORWARD);
-  delay(1000);*/
-  
+	
 }
 
 
@@ -48,34 +36,36 @@ void loop() {
  * выбирается действие: открыть или закрыть нужный кран
  */
 void valvesAction(){
+	bool result = false;	
   byte action = 0;
   action = Wire.read();
+  
+  //TODO сохранение в EEPROM
 
   switch(action){
     case V1_IN_OPEN:
-                  Serial.print("Valve 1 is opened");                 
-                  break;
+		result = v1_in.openValve();
+		break;
     case V1_IN_CLOSE:
-                  Serial.print("Valve 1 is closed");    
-                  break;
+		result = v1_in.closeValve();
+		break;
     case V1_OUT_OPEN:
-                  Serial.print("Valve 2 is opened");
-                  break;
+		result = v1_out.openValve();
+		break;
     case V1_OUT_CLOSE:
-                  Serial.print("Valve 2 is closed");
-                  break;
+		result = v1_out.closeValve();
+		break;
     case V2_IN_OPEN:
-                  Serial.print("Valve 3 is opened");
-                  break;
+		result = v2_in.openValve();
+		break;
     case V2_IN_CLOSE:
-                  Serial.print("Valve 3 is closed");
-                  break;
+		result = v2_in.closeValve();
+		break;
     case V2_OUT_OPEN:
-                  Serial.print("Valve 4 is opened");
-                  break;
+		result = v2_out.openValve();
+		break;
     case V2_OUT_CLOSE:
-                  Serial.print("Valve 4 is closed");
-                  break; 
+		result = v2_out.closeValve();
+		break; 
   }
-  Serial.print('\n');
 }
