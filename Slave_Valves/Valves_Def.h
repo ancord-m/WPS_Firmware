@@ -14,8 +14,8 @@
 */
 
 #define V1_IN 1 
-#define V1_IN_O 2 
-#define V1_IN_C 9
+#define V1_IN_O 9 
+#define V1_IN_C 10
 
 #define V1_OUT 2 
 #define V1_OUT_O 21 //Для 20 и 21 порта использовать analogRead!

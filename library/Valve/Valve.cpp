@@ -19,44 +19,53 @@ Valve::Valve(int valveNumber, int openedSwitch, int closedSwitch)
 bool Valve::openValve()
 {		
 	desiredState = OPENED;
-	writeDesiredState();
+	//writeDesiredState();
 	return action(OPENED);
 }
 
 bool Valve::closeValve()
 {
 	desiredState = CLOSED;
-	writeDesiredState();
+	//writeDesiredState();
 	return action(CLOSED);		
 }
 
 bool Valve::action(ValveState state)
-{
-	int cycles = 0;
+{	
 	bool switchWasPressed = getState() != UNDEFINED ? true : false;
 	Serial.print("Inside action. Desired state: ");
-	state ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");
+	state ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");	
 	if(getState() != state){
+		unsigned int i = 0; 
 		AF_DCMotor valveMotor(valveNumber);
 		valveMotor.setSpeed(MOTOR_SPEED);		
-		while(getState() != state){
+		while(getState() != state){		
+		//	Serial.println(i);		
 			if(state == OPENED) {			
 				valveMotor.run(OPEN);	
 			} else {				
 				valveMotor.run(CLOSE);	
-			}
-			//число циклов * delay ниже, превосходит время на откр/закр крана
-			//и сюда войдем только, если концевик не сработал, либо упало напряжение (кран поедет медленее) 
-			if(++cycles > CYCLES_TO_STOP) { 
-				switchWasPressed = false; //если концевик не сработает, то об этом будет сообщено
+			}			
+			//войдем только, если концевик не сработал, либо упало напряжение (кран поедет медленее) 
+			if(++i >= STOP_COUNT) { 
+				switchWasPressed = false; //если концевик не сработает, то об этом будет сообщено	
+				Serial.println("SWITCH ERROR");	
 				break;
 			} else {
 				switchWasPressed = true;
-			}
-			delay(SHORT_DELAY);			
+			}		
 		}
 		Serial.print("Stopping valve\n");
-		valveMotor.run(STOP);	
+		Serial.println(i);
+		Serial.println(switchWasPressed);			
+		
+		valveMotor.run(STOP);
+		
+	//	EEPROM.write(19, switchWasPressed);
+	//	EEPROM.write(20, highByte(i));
+	//	EEPROM.write(21, lowByte(i));
+		
+		
 		return switchWasPressed;	
 	}
 	
@@ -67,13 +76,13 @@ int Valve::getState()
 {
 	//когда концевик нажат, digitalRead/analogRead вернет ноль
 	bool opened = false;
-	bool closed = false;
+	bool closed = false;	
 	
 	//концевики крана подключены к портам 20 и 21, их надо через analogRead опрашивать
 	if(openedSwitch != 21 && closedSwitch != 20) { 
 		opened = digitalRead(openedSwitch);
 		closed = digitalRead(closedSwitch);
-	} else 	{
+	} else 	{		
 		opened = analogRead(openedSwitch);
 		closed = analogRead(closedSwitch);
 	}		
@@ -125,11 +134,30 @@ bool Valve::selfTest(){
 	bool cswp = false; //closed ...
 	
 	oswp = openValve();
-	delay(500);
+	delay(1000);
 	cswp = closeValve();
 	
-	EEPROM.write(3*(valveNumber - 1) + 1, oswp);
-	EEPROM.write(3*(valveNumber - 1) + 2, cswp);
+	//EEPROM.write(3*(valveNumber - 1) + 1, oswp);
+	//EEPROM.write(3*(valveNumber - 1) + 2, cswp);
 	
 	return oswp && cswp;
+}
+
+void Valve::limitSwitchesTest(){
+	int opened;
+	int closed;
+	
+	if(openedSwitch != 21 && closedSwitch != 20) { 
+		opened = digitalRead(openedSwitch);
+		closed = digitalRead(closedSwitch);
+	} else 	{	
+		opened = analogRead(openedSwitch);
+		closed = analogRead(closedSwitch);
+	}
+	
+	Serial.print("Valve "); Serial.print(valveNumber);
+	Serial.print(": Open SW: ");
+	Serial.print(opened);
+	Serial.print("; Close SW: ");
+	Serial.println(closed);
 }

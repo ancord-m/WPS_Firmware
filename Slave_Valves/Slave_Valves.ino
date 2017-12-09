@@ -14,17 +14,33 @@ byte swst[4][2]; //switches states
 
 void setup() {
 	Serial.begin(9600);
- // Wire.begin(SLAVE_ADDR);
- // Wire.onReceive(valvesAction);
+  Wire.begin(SLAVE_ADDR);
+  Wire.onReceive(valvesAction);
   
   pinMode(SIGNAL_LED, OUTPUT);
   readEeprom(); 
-  v2_in.restoreState();
+ // v2_in.restoreState();
+
+  byte wasPressed = EEPROM.read(19);
+  byte hi = EEPROM.read(20);
+  byte lo = EEPROM.read(21);
+  unsigned int counter = word(hi, lo);
+
+  Serial.print("PRESSED ");
+  Serial.println(wasPressed);
+  Serial.println(counter);
+  delay(3000);
 }
 
 void loop() {
-  //v2_in.selfTest();
-  errorCheck();
+   //    v1_in.selfTest();
+       v1_out.selfTest();
+   //     v2_in.selfTest();
+    //    v2_out.selfTest();
+ // errorCheck();
+
+ delay(1000);
+ 
 }
 
 
@@ -33,42 +49,52 @@ void loop() {
  * оно умещается в один байт, принимается ведомым, т.е тут, и в зависимости от числа,
  * выбирается действие: открыть или закрыть нужный кран
  */
-void valvesAction(){
+void valvesAction(int bytesToRead){
 	bool result = false;	
   byte action = 0;
   action = Wire.read();
-  
-  //TODO сохранение в EEPROM
 
+  //v2_in.openValve();
+  //TODO сохранение в EEPROM
+  Serial.println(action);
+  
   switch(action){
-    case V1_IN_OPEN:
-      result = v1_in.openValve();
- //     swst[V1_IN - 1][OPENED] = result;
- //     EEPROM.write(3 * (V1_IN - 1) + 1, result);
-		  break;
-    case V1_IN_CLOSE:
-		result = v1_in.closeValve();
-		break;
-    case V1_OUT_OPEN:
-		result = v1_out.openValve();
-		break;
-    case V1_OUT_CLOSE:
-		result = v1_out.closeValve();
-		break;
-    case V2_IN_OPEN:
-		result = v2_in.openValve();
-		break;
-    case V2_IN_CLOSE:
-		result = v2_in.closeValve();
-		break;
-    case V2_OUT_OPEN:
-		result = v2_out.openValve();
-		break;
-    case V2_OUT_CLOSE:
-		result = v2_out.closeValve();
-		break; 
+      case V1_IN_OPEN:
+          digitalWrite(SIGNAL_LED, LOW);
+          result = v1_in.openValve();
+    //     swst[V1_IN - 1][OPENED] = result;
+    //     EEPROM.write(3 * (V1_IN - 1) + 1, result);
+		      break;
+      case V1_IN_CLOSE:
+          digitalWrite(SIGNAL_LED, HIGH);
+      		result = v1_in.closeValve();
+      		break;
+      case V1_OUT_OPEN:
+          digitalWrite(SIGNAL_LED, LOW);
+      		result = v1_out.openValve();         
+      		break;
+      case V1_OUT_CLOSE:
+          digitalWrite(SIGNAL_LED, HIGH);
+      		result = v1_out.closeValve();
+      		break;
+      case V2_IN_OPEN:  
+          digitalWrite(SIGNAL_LED, LOW);
+      		result = v2_in.openValve();          
+      		break;
+      case V2_IN_CLOSE:   
+          digitalWrite(SIGNAL_LED, HIGH);
+      		result = v2_in.closeValve();            
+      		break;
+      case V2_OUT_OPEN:
+      		result = v2_out.openValve();
+    	  	break;
+      case V2_OUT_CLOSE:
+      		result = v2_out.closeValve();
+    		  break; 
   }
 }
+
+
 
 void readEeprom(){
   for(int i = 0; i < 4; i++){ //i - номер крана - 1
