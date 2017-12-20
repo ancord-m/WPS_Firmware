@@ -4,8 +4,8 @@
 #define OPEN BACKWARD
 #define CLOSE FORWARD
 #define STOP RELEASE
-#define MOTOR_SPEED 250
-#define STOP_COUNT 15000
+#define MOTOR_SPEED 200
+#define STOP_COUNT 50000L
 #define SHORT_DELAY 100
 
 #include "AFMotor.h"

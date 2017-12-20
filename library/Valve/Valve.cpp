@@ -36,16 +36,25 @@ bool Valve::action(ValveState state)
 	Serial.print("Inside action. Desired state: ");
 	state ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");	
 	if(getState() != state){
-		unsigned int i = 0; 
+		unsigned long i = 0;
+		bool finish = false;
 		AF_DCMotor valveMotor(valveNumber);
 		valveMotor.setSpeed(MOTOR_SPEED);		
-		while(getState() != state){		
-		//	Serial.println(i);		
+		while(!finish){	
 			if(state == OPENED) {			
 				valveMotor.run(OPEN);	
 			} else {				
 				valveMotor.run(CLOSE);	
-			}			
+			}	
+			
+			if(getState() == state) {
+				for(int i = 0; i < 2000; ++i) {
+					continue;
+				}
+				finish = getState() == state ? true : false;
+			}
+		//	Serial.println(i);		
+					
 			//войдем только, если концевик не сработал, либо упало напряжение (кран поедет медленее) 
 			if(++i >= STOP_COUNT) { 
 				switchWasPressed = false; //если концевик не сработает, то об этом будет сообщено	
@@ -55,6 +64,7 @@ bool Valve::action(ValveState state)
 				switchWasPressed = true;
 			}		
 		}
+		
 		Serial.print("Stopping valve\n");
 		Serial.println(i);
 		Serial.println(switchWasPressed);			
@@ -83,8 +93,8 @@ int Valve::getState()
 		opened = digitalRead(openedSwitch);
 		closed = digitalRead(closedSwitch);
 	} else 	{		
-		opened = analogRead(openedSwitch);
-		closed = analogRead(closedSwitch);
+	//	opened = analogRead(openedSwitch);
+	//	closed = analogRead(closedSwitch);
 	}		
 		
 	//если кран завис, отказал концевик, ни один не нажат, то будут одинаковые значения
@@ -134,8 +144,9 @@ bool Valve::selfTest(){
 	bool cswp = false; //closed ...
 	
 	oswp = openValve();
-	delay(1000);
+	delay(3000);
 	cswp = closeValve();
+	delay(3000);
 	
 	//EEPROM.write(3*(valveNumber - 1) + 1, oswp);
 	//EEPROM.write(3*(valveNumber - 1) + 2, cswp);

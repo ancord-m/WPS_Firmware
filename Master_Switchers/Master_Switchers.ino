@@ -14,13 +14,31 @@ void setup() {
 }
 
 void loop() {
- Serial.println(getSystemState());  
-  if(digitalRead(B1_BS)) {
-    sendCommandToValvesController(V2_IN_OPEN);
+// Serial.println(getSystemState());  
+ /* if(digitalRead(B1_BS)) {
+    sendCommandToValvesController(V1_IN_OPEN);
   } else {
-    sendCommandToValvesController(V2_IN_CLOSE);
-  }
-  delay(1000);
+    sendCommandToValvesController(V1_IN_CLOSE);
+  }*/
+  sendCommandToValvesController(V1_IN_CLOSE);
+  delay(10000);
+  sendCommandToValvesController(V1_IN_OPEN);
+  delay(10000);
+
+  sendCommandToValvesController(V1_OUT_CLOSE);
+  delay(10000);
+  sendCommandToValvesController(V1_OUT_OPEN);
+  delay(10000);
+
+  sendCommandToValvesController(V2_IN_CLOSE);
+  delay(10000);
+  sendCommandToValvesController(V2_IN_OPEN);
+  delay(10000);
+
+  sendCommandToValvesController(V2_OUT_CLOSE);
+  delay(10000);
+  sendCommandToValvesController(V2_OUT_OPEN);
+  delay(10000);
 }
 
 void sendCommandToValvesController(byte command){

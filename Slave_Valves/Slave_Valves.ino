@@ -33,13 +33,13 @@ void setup() {
 }
 
 void loop() {
-   //    v1_in.selfTest();
-       v1_out.selfTest();
-   //     v2_in.selfTest();
+      // v1_in.selfTest();
+    //  v1_out.selfTest();
+      // v2_in.selfTest();
     //    v2_out.selfTest();
  // errorCheck();
 
- delay(1000);
+ delay(100);
  
 }
 
@@ -86,9 +86,11 @@ void valvesAction(int bytesToRead){
       		result = v2_in.closeValve();            
       		break;
       case V2_OUT_OPEN:
+          digitalWrite(SIGNAL_LED, LOW);
       		result = v2_out.openValve();
     	  	break;
       case V2_OUT_CLOSE:
+          digitalWrite(SIGNAL_LED, HIGH);
       		result = v2_out.closeValve();
     		  break; 
   }
