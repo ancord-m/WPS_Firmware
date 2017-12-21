@@ -1,44 +1,72 @@
 #include "Switchers_Def.h"
 #include "Common_Def.h"
 #include <Wire.h>
+#include <Servo.h>
 
-#define VALVES_CONTROLLER 8
+Servo servo;
 
 void setup() {
-  Serial.begin(9600);
-  Wire.begin();
-  pinMode(13, OUTPUT);
-
+  pinMode(INT_LED, OUTPUT);
   initSwitchers();
-
+  servo.attach(SERVO_PIN);
+  Wire.begin();  
 }
 
 void loop() {
-// Serial.println(getSystemState());  
- /* if(digitalRead(B1_BS)) {
-    sendCommandToValvesController(V1_IN_OPEN);
-  } else {
-    sendCommandToValvesController(V1_IN_CLOSE);
-  }*/
-  sendCommandToValvesController(V1_IN_CLOSE);
-  delay(10000);
-  sendCommandToValvesController(V1_IN_OPEN);
-  delay(10000);
+  //вспышка помогает понять, что есть 10 секунд, чтобы поднять в ручном режиме поплавки
+  //и перейти в нужное состояние 1, 4 или 5 для ручной дозации или самодиагностики.
+  digitalWrite(INT_LED, HIGH);
+  delay(SHORT_DELAY);
+  digitalWrite(INT_LED, LOW);
+  
+  delay(VLONG_DELAY);
 
-  sendCommandToValvesController(V1_OUT_CLOSE);
-  delay(10000);
-  sendCommandToValvesController(V1_OUT_OPEN);
-  delay(10000);
-
-  sendCommandToValvesController(V2_IN_CLOSE);
-  delay(10000);
-  sendCommandToValvesController(V2_IN_OPEN);
-  delay(10000);
-
-  sendCommandToValvesController(V2_OUT_CLOSE);
-  delay(10000);
-  sendCommandToValvesController(V2_OUT_OPEN);
-  delay(10000);
+  switch(getSystemState()) {
+        case 0: //бочки пусты, заполняем и открываем
+            //открываем первую бочку
+            sendCommandToValvesController(V1_OUT_OPEN);
+            delay(USHORT_DELAY);
+            sendCommandToValvesController(V2_OUT_CLOSE);
+            delay(USHORT_DELAY);
+            //TODO
+            break;
+        case 3: //первая бочка закончилась, ВКЛЮЧИТЬ ВТОРУЮ
+            sendCommandToValvesController(V2_OUT_OPEN);
+            delay(USHORT_DELAY);
+            sendCommandToValvesController(V1_OUT_CLOSE);
+            delay(USHORT_DELAY);
+            servo.write(TO_FIRST);
+            //TODO dose
+            sendCommandToValvesController(V1_IN_OPEN);
+            break;
+        case 12: //вторая бочка закончилась, ВКЛЮЧИТЬ ПЕРВУЮ
+            sendCommandToValvesController(V1_OUT_OPEN);
+            delay(USHORT_DELAY);
+            sendCommandToValvesController(V2_OUT_CLOSE);
+            delay(USHORT_DELAY);
+            servo.write(TO_SECOND);
+            //TODO dose
+            sendCommandToValvesController(V2_IN_OPEN);
+            break;
+        case 15: //первая или вторая бочка заполнена, закрыть все входные краны
+            sendCommandToValvesController(V1_IN_CLOSE);
+            delay(SHORT_DELAY);
+            sendCommandToValvesController(V2_IN_CLOSE);
+            break;    
+        case 1: //штатно невозможно, в ручном режиме дозируем во вторую бочку
+            servo.write(TO_SECOND);
+            //TODO dose    
+            break;
+        case 4: //штатно невозможно, в ручном режиме дозируем в первую бочку
+            servo.write(TO_FIRST);
+            //TODO dose
+            break;
+        case 5: //ручной запуск самодиагностики
+            break;
+        default:
+            //TODO выводить код состояния куда-то
+            break;
+  }
 }
 
 void sendCommandToValvesController(byte command){
@@ -56,7 +84,7 @@ void initSwitchers() {
 
 //позиционный код состояния системы
 //НП1_ВП1_НП2_ВП2
-int getSystemState() {
+unsigned int getSystemState() {
   return (digitalRead(B1_BS) << 3) |
          (digitalRead(B1_TS) << 2) |
          (digitalRead(B2_BS) << 1) |

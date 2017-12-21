@@ -32,9 +32,7 @@ bool Valve::closeValve()
 
 bool Valve::action(ValveState state)
 {	
-	bool switchWasPressed = getState() != UNDEFINED ? true : false;
-	Serial.print("Inside action. Desired state: ");
-	state ? Serial.print("CLOSED\n") : Serial.print("OPENED\n");	
+	bool switchWasPressed = getState() != UNDEFINED ? true : false;	
 	if(getState() != state){
 		unsigned long i = 0;
 		bool finish = false;
@@ -46,15 +44,15 @@ bool Valve::action(ValveState state)
 			} else {				
 				valveMotor.run(CLOSE);	
 			}	
-			
+			//примитивная защита от дребезга контактов и наводок
 			if(getState() == state) {
-				for(int i = 0; i < 2000; ++i) {
+				//Ждем 3000 тактов. ПРЕРЫВАНИЯ ЗАПРЕЩЕНЫ, DELAY НЕ РАБОТАЕТ!
+				for(int i = 0; i < 3000; ++i) {
 					continue;
 				}
+				//еще раз спросим кран: он уверен, что приехал?
 				finish = getState() == state ? true : false;
-			}
-		//	Serial.println(i);		
-					
+			}					
 			//войдем только, если концевик не сработал, либо упало напряжение (кран поедет медленее) 
 			if(++i >= STOP_COUNT) { 
 				switchWasPressed = false; //если концевик не сработает, то об этом будет сообщено	
@@ -65,16 +63,11 @@ bool Valve::action(ValveState state)
 			}		
 		}
 		
-		Serial.print("Stopping valve\n");
-		Serial.println(i);
-		Serial.println(switchWasPressed);			
-		
 		valveMotor.run(STOP);
 		
 	//	EEPROM.write(19, switchWasPressed);
 	//	EEPROM.write(20, highByte(i));
 	//	EEPROM.write(21, lowByte(i));
-		
 		
 		return switchWasPressed;	
 	}
@@ -84,7 +77,9 @@ bool Valve::action(ValveState state)
 
 int Valve::getState()
 {
-	//когда концевик нажат, digitalRead/analogRead вернет ноль
+	//когда концевик нажат, digitalRead
+	//analogRead ничего не вернет, АЦП отнимает много процессорного времени и дает кучу наводок.
+	//отключать V1 OUT, который висит на A6 и A7, только по счетчику STOP_COUNT
 	bool opened = false;
 	bool closed = false;	
 	
@@ -92,10 +87,7 @@ int Valve::getState()
 	if(openedSwitch != 21 && closedSwitch != 20) { 
 		opened = digitalRead(openedSwitch);
 		closed = digitalRead(closedSwitch);
-	} else 	{		
-	//	opened = analogRead(openedSwitch);
-	//	closed = analogRead(closedSwitch);
-	}		
+	} 
 		
 	//если кран завис, отказал концевик, ни один не нажат, то будут одинаковые значения
 	//XOR позволит это выявить и сообщить выше.
@@ -133,7 +125,6 @@ void Valve::restoreState(){
 	//восстановка состояния и если желаемое не достигнуто - достигнуть
 	//desiredState может быть либо 0 (OPENED), либо 1 (CLOSED); см enum ValveState
 	readDesiredState() ? desiredState = CLOSED : desiredState = OPENED;
-	desiredState ? Serial.print("Wanted to CLOSE\n") : Serial.print("Wanted to OPEN\n");
 	if(desiredState != getState()){
 		desiredState ? closeValve() : openValve();			
 	}

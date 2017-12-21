@@ -6,8 +6,12 @@
 		1 или 2 - номер бочки
 		B или T - Bottom или Top Switcher
 */
+#ifndef SWITCHERS_DEF_H
+#define SWITCHERS_DEF_H
 
 #define B1_BS 2
 #define B1_TS 3
 #define B2_BS 4
 #define B2_TS 7
+
+#endif
