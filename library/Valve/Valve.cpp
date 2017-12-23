@@ -19,14 +19,14 @@ Valve::Valve(int valveNumber, int openedSwitch, int closedSwitch)
 bool Valve::openValve()
 {		
 	desiredState = OPENED;
-	//writeDesiredState();
+	writeDesiredState();
 	return action(OPENED);
 }
 
 bool Valve::closeValve()
 {
 	desiredState = CLOSED;
-	//writeDesiredState();
+	writeDesiredState();
 	return action(CLOSED);		
 }
 
@@ -56,28 +56,20 @@ bool Valve::action(ValveState state)
 			//войдем только, если концевик не сработал, либо упало напряжение (кран поедет медленее) 
 			if(++i >= STOP_COUNT) { 
 				switchWasPressed = false; //если концевик не сработает, то об этом будет сообщено	
-				Serial.println("SWITCH ERROR");	
 				break;
 			} else {
 				switchWasPressed = true;
 			}		
-		}
-		
-		valveMotor.run(STOP);
-		
-	//	EEPROM.write(19, switchWasPressed);
-	//	EEPROM.write(20, highByte(i));
-	//	EEPROM.write(21, lowByte(i));
-		
+		}		
+		valveMotor.run(STOP);		
 		return switchWasPressed;	
-	}
-	
+	}	
 	return switchWasPressed;
 }
 
 int Valve::getState()
 {
-	//когда концевик нажат, digitalRead
+	//когда концевик нажат, digitalRead вернет 
 	//analogRead ничего не вернет, АЦП отнимает много процессорного времени и дает кучу наводок.
 	//отключать V1 OUT, который висит на A6 и A7, только по счетчику STOP_COUNT
 	bool opened = false;
@@ -143,23 +135,4 @@ bool Valve::selfTest(){
 	//EEPROM.write(3*(valveNumber - 1) + 2, cswp);
 	
 	return oswp && cswp;
-}
-
-void Valve::limitSwitchesTest(){
-	int opened;
-	int closed;
-	
-	if(openedSwitch != 21 && closedSwitch != 20) { 
-		opened = digitalRead(openedSwitch);
-		closed = digitalRead(closedSwitch);
-	} else 	{	
-		opened = analogRead(openedSwitch);
-		closed = analogRead(closedSwitch);
-	}
-	
-	Serial.print("Valve "); Serial.print(valveNumber);
-	Serial.print(": Open SW: ");
-	Serial.print(opened);
-	Serial.print("; Close SW: ");
-	Serial.println(closed);
 }

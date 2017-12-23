@@ -8,10 +8,14 @@
 //The address of the slave valve driver MCU
 #define VALVES_CONTROLLER 8
 
-#define INT_LED 13
+#define SIGNAL_LED 13
 #define SERVO_PIN 6
-#define TO_FIRST 75   //angles
+#define DOSE_PUMP 5
+#define TO_FIRST 70   //angles
 #define TO_SECOND 105
+
+#define V1_IN_CELL 0 //EEPROM cell
+#define V2_IN_CELL 1
 
 //List of commands to be received from Master
 #define V1_IN_OPEN 1

@@ -32,8 +32,7 @@ class Valve
 		int getState();
 		bool selfTest();
 		int getValveNumber();	
-		void restoreState();		
-		void limitSwitchesTest();
+		void restoreState();	
 	private:
 		int openedSwitch;  //номер ножки МК
 		int closedSwitch; //к которой подключен концевик
