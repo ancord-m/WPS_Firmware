@@ -43,29 +43,36 @@ void valvesAction(int bytesToRead){
   switch(action){
       case V1_IN_OPEN:          
           result = v1_in.openValve();
-    //     swst[V1_IN - 1][OPENED] = result;
+          swst[V1_IN - 1][OPENED] = result;
     //     EEPROM.write(3 * (V1_IN - 1) + 1, result);
 		      break;
       case V1_IN_CLOSE:
       		result = v1_in.closeValve();
+          swst[V1_IN - 1][CLOSED] = result;
       		break;
       case V1_OUT_OPEN:
-      		result = v1_out.openValve();         
+      		result = v1_out.openValve(); 
+          swst[V1_OUT - 1][OPENED] = result;        
       		break;
       case V1_OUT_CLOSE:
       		result = v1_out.closeValve();
+          swst[V1_OUT - 1][CLOSED] = result;
       		break;
       case V2_IN_OPEN:  
-      		result = v2_in.openValve();          
+      		result = v2_in.openValve();
+          swst[V2_IN - 1][OPENED] = result;         
       		break;
       case V2_IN_CLOSE:   
-      		result = v2_in.closeValve();            
+      		result = v2_in.closeValve();     
+          swst[V2_IN - 1][CLOSED] = result;       
       		break;
       case V2_OUT_OPEN:
       		result = v2_out.openValve();
+          swst[V2_OUT - 1][OPENED] = result;
     	  	break;
       case V2_OUT_CLOSE:
       		result = v2_out.closeValve();
+          swst[V2_OUT - 1][CLOSED] = result;
     		  break; 
   }
 }
