@@ -36,8 +36,8 @@
 enum Delays {
   USHORT_DELAY = 500,
   SHORT_DELAY = 1000,
-  LONG_DELAY = 5000,
-  VLONG_DELAY = 10000
+  LONG_DELAY = 3000,
+  VLONG_DELAY = 7000
 };
 
 #endif

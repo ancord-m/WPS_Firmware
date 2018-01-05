@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include <Servo.h>
 #include <EEPROM.h>
+#include <Avr/wdt.h>
 
 //управляет коромыслом, которое направляет гипохлорид в нужную бочку
 Servo servo; 
@@ -12,24 +13,27 @@ Servo servo;
 bool needToClose_V1_IN;
 bool needToClose_V2_IN;
 
-void setup() {
+void setup() {  
   pinMode(SIGNAL_LED, OUTPUT);
   initSwitchers();
-  servo.attach(SERVO_PIN);
   Wire.begin();   
    
   needToClose_V1_IN = EEPROM.read(V1_IN_CELL);
   needToClose_V2_IN = EEPROM.read(V2_IN_CELL);  
+
+  wdt_enable(WDTO_8S);
 }
 
 void loop() {
+  wdt_reset();
   //вспышка помогает понять, что есть 10 секунд, чтобы поднять в ручном режиме поплавки
   //и перейти в нужное состояние 1, 4 или 5 для ручной дозации или самодиагностики.
+
   digitalWrite(SIGNAL_LED, HIGH);
   delay(SHORT_DELAY);
   digitalWrite(SIGNAL_LED, LOW);
   
-  delay(VLONG_DELAY);
+  delay(LONG_DELAY);
 
   switch(getSystemState()) {
         case 0: //бочки пусты, закрыть все краны, заполнять "вручную"            
@@ -80,7 +84,8 @@ void loop() {
   }
   
   if(needToClose_V1_IN) {    
-    while(!listenPin(B1_TS)) {      
+    while(!listenPin(B1_TS)) {  
+      wdt_reset();    
       delay(SHORT_DELAY);
       continue;
     }
@@ -90,21 +95,23 @@ void loop() {
   }
   
   if(needToClose_V2_IN) {    
-    while(!listenPin(B2_TS)) {      
+    while(!listenPin(B2_TS)) {  
+      wdt_reset();    
       delay(SHORT_DELAY);
       continue;
     }
     sendCommandToValvesController(V2_IN_CLOSE);
     needToClose_V2_IN = false;
     EEPROM.write(V2_IN_CELL, 0);    
-  }
-  
+  }  
 }
 
-void sendCommandToValvesController(byte command){    
+void sendCommandToValvesController(byte command){ 
+  wdt_reset();   
   Wire.beginTransmission(VALVES_CONTROLLER);
   Wire.write(command);
   Wire.endTransmission();
+  wdt_reset();
 }
 
 void initSwitchers() {
@@ -131,6 +138,7 @@ void doseHClO(){
 }
 
 void doseTo(unsigned int barrel){
+  wdt_reset();
   servo.attach(SERVO_PIN);
   servo.write(barrel);
   delay(SHORT_DELAY);
@@ -145,6 +153,7 @@ bool listenPin(unsigned int pin) {
   while(!finish) {
       result = digitalRead(pin);
       for(int i = 0; i < 2000; ++i) {
+          wdt_reset();
           continue;
       }
       finish = digitalRead(pin) == result ? true : false;
@@ -154,9 +163,9 @@ bool listenPin(unsigned int pin) {
 }
 
 void systemSelfTest() {
-  servo.write(TO_FIRST);
+  doseTo(TO_FIRST);
   delay(LONG_DELAY);
-  servo.write(TO_SECOND);
+  doseTo(TO_SECOND);
   delay(LONG_DELAY);
   sendCommandToValvesController(V1_IN_OPEN);
   delay(VLONG_DELAY);

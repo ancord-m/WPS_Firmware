@@ -18,6 +18,7 @@ Valve::Valve(int valveNumber, int openedSwitch, int closedSwitch)
 
 bool Valve::openValve()
 {		
+	wdt_reset();
 	desiredState = OPENED;
 	writeDesiredState();
 	return action(OPENED);
@@ -25,6 +26,7 @@ bool Valve::openValve()
 
 bool Valve::closeValve()
 {
+	wdt_reset();
 	desiredState = CLOSED;
 	writeDesiredState();
 	return action(CLOSED);		
@@ -38,7 +40,8 @@ bool Valve::action(ValveState state)
 		bool finish = false;
 		AF_DCMotor valveMotor(valveNumber);
 		valveMotor.setSpeed(MOTOR_SPEED);		
-		while(!finish){	
+		while(!finish){
+			wdt_reset();			
 			if(state == OPENED) {			
 				valveMotor.run(OPEN);	
 			} else {				
@@ -48,6 +51,7 @@ bool Valve::action(ValveState state)
 			if(getState() == state) {
 				//Ждем 3000 тактов. ПРЕРЫВАНИЯ ЗАПРЕЩЕНЫ, DELAY НЕ РАБОТАЕТ!
 				for(int i = 0; i < 3000; ++i) {
+					wdt_reset();
 					continue;
 				}
 				//еще раз спросим кран: он уверен, что приехал?

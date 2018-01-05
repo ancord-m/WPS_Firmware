@@ -11,6 +11,7 @@
 #include "AFMotor.h"
 #include <Wire.h>
 #include <EEPROM.h>
+#include <Avr/wdt.h>
 
 
 //valveNumber - число от 1 до 4 для обращения с Motor Shield L293D

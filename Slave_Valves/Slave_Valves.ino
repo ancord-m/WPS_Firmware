@@ -1,6 +1,7 @@
 #include "Valves_Def.h"
 #include "Common_Def.h"
 #include <Wire.h>
+#include <Avr/wdt.h>
 #include "Valve.h"
 
 #define SIGNAL_LED 13
@@ -17,15 +18,17 @@ void setup() {
   Wire.onReceive(valvesAction);  
   pinMode(SIGNAL_LED, OUTPUT);
   
+  wdt_enable(WDTO_8S);
   //доезжаем куда надо после внезапного отключения
   v1_in.restoreState();
   v1_out.restoreState();
   v2_in.restoreState();
-  v2_out.restoreState(); 
+  v2_out.restoreState();  
 }
 
 void loop() {
-   errorCheck();
+  wdt_reset();
+  errorCheck();
 }
 
 /*
@@ -97,6 +100,7 @@ void signalLedBlink(){
  */
 void errorCheck(){
   for(int vCounter = 0; vCounter < 4; vCounter++){  
+    wdt_reset();
     if(!swst[vCounter][OPENED] || !swst[vCounter][CLOSED]){
       //сообщаем номер крана
       for(int i = vCounter + 1; i != 0; i--){
